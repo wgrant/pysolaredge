@@ -1,9 +1,19 @@
 from testtools import TestCase
 
-from solaredge.params import decode_parameters
+from solaredge.params import (
+    decode_parameter_ids,
+    decode_parameters,
+    )
 
 
-class TestDecodeParameter(TestCase):
+class TestDecodeParameterIDs(TestCase):
+
+    def test_uint(self):
+        self.assertEqual(
+            [0x1234, 1], decode_parameter_ids(b'\x34\x12\x01\x00'))
+
+
+class TestDecodeParameters(TestCase):
 
     def test_uint(self):
         self.assertEqual(

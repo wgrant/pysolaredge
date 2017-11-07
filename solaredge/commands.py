@@ -39,5 +39,6 @@ class MessageType(enum.Enum):
 
 
 MESSAGE_DECODERS = {
-    MessageType.RESP_PARAMS_SINGLE: solaredge.params.decode_parameters
+    MessageType.CMD_PARAMS_GET_SINGLE: solaredge.params.decode_parameter_ids,
+    MessageType.RESP_PARAMS_SINGLE: solaredge.params.decode_parameters,
     }

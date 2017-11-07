@@ -10,6 +10,16 @@ class ParameterType(enum.Enum):
     STRING = 3
 
 
+def decode_parameter_ids(raw):
+    param_ids = []
+    while raw:
+        assert len(raw) >= 2
+        param_id, = struct.unpack('<H', raw[:2])
+        param_ids.append(param_id)
+        raw = raw[2:]
+    return param_ids
+
+
 def decode_parameters(raw):
     params = []
     while raw:
