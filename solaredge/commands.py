@@ -42,9 +42,32 @@ class VenusMessageType(enum.Enum):
     RESP_VENUSMNGR_GET_SYS_STATUS = 0x0283
 
 
+def get_parameter_id(msg, param_id):
+    if ((not msg.addr_from & 0x80000000 and msg.addr_from & 0x00800000)
+            or (not msg.addr_to & 0x80000000 and msg.addr_to & 0x00800000)):
+        # It's an inverter. Assume Venus for now.
+        param_enum = solaredge.params.VenusParameters
+    elif not msg.addr_from & 0x80000000 or not msg.addr_to & 0x80000000:
+        # It's probably a Polestar.
+        param_enum = solaredge.params.PolestarParameters
+    else:
+        param_enum = None
+    if param_enum is not None:
+        try:
+            return param_enum(param_id)
+        except ValueError:
+            pass
+    return param_id
+
+
+def decode_param_ids_message(msg):
+    return [
+        get_parameter_id(msg, param_id)
+        for param_id in solaredge.params.decode_parameter_ids(msg.data)]
+
+
 MESSAGE_DECODERS = {
-    GenericMessageType.CMD_PARAMS_GET_SINGLE:
-        solaredge.params.decode_parameter_ids,
+    GenericMessageType.CMD_PARAMS_GET_SINGLE: decode_param_ids_message,
     GenericMessageType.RESP_PARAMS_SINGLE:
-        solaredge.params.decode_parameters,
+        lambda msg: solaredge.params.decode_parameters(msg.data),
     }

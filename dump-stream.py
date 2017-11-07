@@ -56,6 +56,6 @@ while solaredge.proto.MAGIC in c:
     except (KeyError, ValueError):
         decoded = codecs.encode(msg.data, 'hex').decode('ascii')
     else:
-        decoded = decoder(msg.data)
+        decoded = decoder(msg)
     print('  %s: %s' % (msg_type, decoded))
     c = tail
