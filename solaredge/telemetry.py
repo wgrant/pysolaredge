@@ -48,6 +48,21 @@ def decode_telem(dev_type, telem_data):
             "uptime": uptime, "vdc_in": vdc_in, "i_in": i_in,
             "vdc_out": vdc_out, "energy": energy, "temp": temp,
             }
+    elif dev_type == TelemRecordType.INVERTER_1PHASE:
+        (timestamp, uptime, interval, temp, e_ac, e_ac_interval, v_ac,
+         i_ac, f_ac, e_dc, e_dc_interval, v_dc, i_dc, e_ac_total, unk, unk,
+         unk, unk, p_max, unk, unk, unk, unk, p_ac) = struct.unpack(
+             '<LLffffffffffffffLfffffff', telem_data[:96])
+        # XXX: Unknown 80-byte tail, too.
+
+        # e_dc, e_dc_interval, i_dc are hardcoded to 0xff7fffff in the
+        # firmware.
+        return {
+            "timestamp": datetime.datetime.utcfromtimestamp(timestamp),
+            "uptime": uptime, "interval": interval, "e_ac": e_ac,
+            "e_ac_interval": e_ac_interval, "v_ac": v_ac, "i_ac": i_ac,
+            "f_ac": f_ac, "v_dc": v_dc, "e_ac_total": e_ac_total,
+            "p_max": p_max, "p_ac": p_ac}
 
     # XXX: We're just assuming that each record starts with a timestamp.
     timestamp = datetime.datetime.utcfromtimestamp(
