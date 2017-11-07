@@ -3,6 +3,9 @@ import struct
 
 MAGIC = b'\x12\x34\x56\x79'
 
+HEADER_LEN = 20
+CRC_LEN = 2
+
 Message = collections.namedtuple(
     'Message', ('seq', 'addr_from', 'addr_to', 'type', 'data'))
 
@@ -15,19 +18,38 @@ def calculate_message_crc(msg):
     return calculate_crc(crc_header + msg.data)
 
 
-def decode_message(raw_msg):
+class IncompleteMessageException(Exception):
+    pass
+
+
+class TrailingDataException(Exception):
+    pass
+
+
+def decode_message_with_tail(raw_msg):
+    if len(raw_msg) < HEADER_LEN:
+        raise IncompleteMessageException()
     (magic, data_len, data_len_inv, msg_seq, addr_from, addr_to,
-     msg_type) = struct.unpack('<4sHHHLLH', raw_msg[:20])
+     msg_type) = struct.unpack('<4sHHHLLH', raw_msg[:HEADER_LEN])
     assert magic == MAGIC
     assert data_len == ~data_len_inv & 0xffff
-    assert len(raw_msg) == 20 + data_len + 2
-    data = raw_msg[20:-2]
+    if len(raw_msg) < HEADER_LEN + data_len + CRC_LEN:
+        raise IncompleteMessageException()
+    data = raw_msg[HEADER_LEN:HEADER_LEN + data_len]
 
     msg = Message(msg_seq, addr_from, addr_to, msg_type, data)
 
-    crc, = struct.unpack('<H', raw_msg[-2:])
+    crc, = struct.unpack(
+        '<H', raw_msg[HEADER_LEN + data_len: HEADER_LEN + data_len + CRC_LEN])
     assert calculate_message_crc(msg) == crc
 
+    return msg, raw_msg[HEADER_LEN + data_len + CRC_LEN:]
+
+
+def decode_message(raw_msg):
+    msg, tail = decode_message_with_tail(raw_msg)
+    if tail != b'':
+        raise TrailingDataException()
     return msg
 
 
