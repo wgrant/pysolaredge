@@ -6,8 +6,17 @@ MAGIC = b'\x12\x34\x56\x79'
 HEADER_LEN = 20
 CRC_LEN = 2
 
-Message = collections.namedtuple(
-    'Message', ('seq', 'addr_from', 'addr_to', 'type', 'data'))
+class Message(collections.namedtuple(
+        'Message', ('seq', 'addr_from', 'addr_to', 'type', 'data'))):
+    __slots__ = ()
+
+    def __repr__(self):
+        return (
+            '<%s seq=0x%04x, addr_from=0x%04x, addr_to=0x%04x, type=0x%04x, '
+            'data=[%d bytes]>' % (
+                self.__class__.__name__, self.seq, self.addr_from,
+                self.addr_to, self.type, len(self.data)))
+
 
 
 def calculate_message_crc(msg):

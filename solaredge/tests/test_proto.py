@@ -20,6 +20,10 @@ class TestEncodeDecodeMessage(TestCase):
                 addr_to=0xfffffffe,
                 type=0x500,
                 data=b''))
+        self.assertEqual(
+            '<Message seq=0x0227, addr_from=0xdeadbeef, addr_to=0xfffffffe, '
+            'type=0x0500, data=[0 bytes]>',
+            repr(msg))
         self.assertEqual(raw, solaredge.proto.encode_message(msg))
 
     def test_data(self):
