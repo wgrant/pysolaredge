@@ -3,16 +3,18 @@ import enum
 import solaredge.params
 
 
-class MessageType(enum.Enum):
+class GenericMessageType(enum.Enum):
     CMD_PARAMS_GET_SINGLE = 0x0012
     RESP_ACK = 0x0080
     RESP_NACK = 0x0081
     RESP_PARAMS_SINGLE = 0x0090
 
-    CMD_VENUSMNGR_GET_SYS_STATUS = 0x0205
-    CMD_VENUSMNGR_KA_DATA_SEND = 0x0218
-    RESP_VENUSMNGR_GET_SYS_STATUS = 0x0283
+    CMD_SERVER_POST_DATA = 0x0500
+    CMD_SERVER_GET_GMT = 0x0501
+    RESP_SERVER_GMT = 0x0580
 
+
+class PolestarMessageType(enum.Enum):
     CMD_POLESTAR_MAC_ADDR_GET = 0x0306
     CMD_POLESTAR_IP_ADDR_GET = 0x0307
     CMD_POLESTAR_SEND_PING = 0x030c
@@ -33,12 +35,16 @@ class MessageType(enum.Enum):
     RESP_POLESTAR_GET_ENERGY_STATISTICS_STATUS = 0x038d
     RESP_POLESTAR_GET_SERVER_CONTROL_STATUS = 0x0392
 
-    CMD_SERVER_POST_DATA = 0x0500
-    CMD_SERVER_GET_GMT = 0x0501
-    RESP_SERVER_GMT = 0x0580
+
+class VenusMessageType(enum.Enum):
+    CMD_VENUSMNGR_GET_SYS_STATUS = 0x0205
+    CMD_VENUSMNGR_KA_DATA_SEND = 0x0218
+    RESP_VENUSMNGR_GET_SYS_STATUS = 0x0283
 
 
 MESSAGE_DECODERS = {
-    MessageType.CMD_PARAMS_GET_SINGLE: solaredge.params.decode_parameter_ids,
-    MessageType.RESP_PARAMS_SINGLE: solaredge.params.decode_parameters,
+    GenericMessageType.CMD_PARAMS_GET_SINGLE:
+        solaredge.params.decode_parameter_ids,
+    GenericMessageType.RESP_PARAMS_SINGLE:
+        solaredge.params.decode_parameters,
     }
