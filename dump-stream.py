@@ -19,4 +19,11 @@ while solaredge.proto.MAGIC in c:
         c = c[1:]
         continue
     print(msg.format(type_enum=solaredge.commands.MessageType))
+    try:
+        decoder = solaredge.commands.MESSAGE_DECODERS[
+            solaredge.commands.MessageType(msg.type)]
+    except (KeyError, ValueError):
+        pass
+    else:
+        print('  %r' % (decoder(msg.data),))
     c = tail

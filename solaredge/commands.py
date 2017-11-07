@@ -1,5 +1,7 @@
 import enum
 
+import solaredge.params
+
 
 class MessageType(enum.Enum):
     CMD_PARAMS_GET_SINGLE = 0x0012
@@ -34,3 +36,8 @@ class MessageType(enum.Enum):
     CMD_SERVER_POST_DATA = 0x0500
     CMD_SERVER_GET_GMT = 0x0501
     RESP_SERVER_GMT = 0x0580
+
+
+MESSAGE_DECODERS = {
+    MessageType.RESP_PARAMS_SINGLE: solaredge.params.decode_parameters
+    }
