@@ -5,26 +5,29 @@ import logging
 import sys
 
 import solaredge.commands
+import solaredge.devices.polestar
+import solaredge.devices.venus
 import solaredge.proto
+
 
 def get_message_type(msg):
     if ((not msg.addr_from & 0x80000000 and msg.addr_from & 0x00800000)
             or (not msg.addr_to & 0x80000000 and msg.addr_to & 0x00800000)):
         # It's an inverter. Assume Venus for now.
         mt_enums = (
-            solaredge.commands.VenusMessageType,
+            solaredge.devices.venus.VenusMessageType,
             solaredge.commands.GenericMessageType,
             )
     elif not msg.addr_from & 0x80000000 or not msg.addr_to & 0x80000000:
         # It's probably a Polestar.
         mt_enums = (
-            solaredge.commands.PolestarMessageType,
+            solaredge.devices.polestar.PolestarMessageType,
             solaredge.commands.GenericMessageType,
             )
     elif msg.addr_from == 0xffffffff or msg.addr_to == 0xffffffff:
         mt_enums = (
-            solaredge.commands.VenusMessageType,
-            solaredge.commands.PolestarMessageType,
+            solaredge.devices.venus.VenusMessageType,
+            solaredge.devices.polestar.PolestarMessageType,
             solaredge.commands.GenericMessageType,
             )
     else:
