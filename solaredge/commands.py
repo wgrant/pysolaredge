@@ -3,6 +3,7 @@ import enum
 import solaredge.devices.polestar
 import solaredge.devices.venus
 import solaredge.params
+import solaredge.telemetry
 
 
 class GenericMessageType(enum.Enum):
@@ -44,4 +45,6 @@ MESSAGE_DECODERS = {
     GenericMessageType.CMD_PARAMS_GET_SINGLE: decode_param_ids_message,
     GenericMessageType.RESP_PARAMS_SINGLE:
         lambda msg: solaredge.params.decode_parameters(msg.data),
+    GenericMessageType.CMD_SERVER_POST_DATA:
+        lambda msg: solaredge.telemetry.decode_telems(msg.data),
     }
