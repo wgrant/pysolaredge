@@ -4,6 +4,10 @@ import enum
 import struct
 
 
+# The inverter sends 0xff7fffff as a float to indicate it has no data.
+NULL_FLOAT, = struct.unpack('<f', b'\xff\xff\x7f\xff')
+
+
 class TelemRecordType(enum.Enum):
     PANEL = 0x0000
     STRING = 0x0001
@@ -35,6 +39,13 @@ class TelemRecordType(enum.Enum):
     VEGA = 0xa00
 
 
+class InverterMode(enum.Enum):
+    OFF = 1
+    SLEEPING = 2
+    STARTING = 3
+    MPPT = 4
+
+
 def decode_telem(dev_type, telem_data):
     if dev_type == TelemRecordType.xx_PANEL_NEW:
         timestamp, uptime, power_attrs, energy, temp = struct.unpack(
@@ -50,10 +61,24 @@ def decode_telem(dev_type, telem_data):
             }
     elif dev_type == TelemRecordType.INVERTER_1PHASE:
         (timestamp, uptime, interval, temp, e_ac, e_ac_interval, v_ac,
-         i_ac, f_ac, e_dc, e_dc_interval, v_dc, i_dc, e_ac_total, unk, unk,
-         unk, unk, p_max, unk, unk, unk, unk, p_ac) = struct.unpack(
-             '<LLffffffffffffffLfffffff', telem_data[:96])
-        # XXX: Unknown 80-byte tail, too.
+         i_ac, f_ac, e_dc, e_dc_interval, v_dc, i_dc, e_ac_total, i_rcd_maybe,
+         unk, cos_phi_maybe, inverter_mode, isolation, power_limit_maybe,
+         i_ac_dc_maybe, unk, unk, p_ac, p_ac_apparent, p_ac_reactive) = [
+             (v if v != NULL_FLOAT else None) for v in
+             struct.unpack('<LLLffffffffffffffLffffffff', telem_data[:104])]
+        # XXX: Unknown 72-byte tail, too.
+
+        # I don't know what i_ac_dc is, since it's too low to be
+        # conversion overhead, but it's "I AC/DC [A]" in the web UI.
+
+        # power_limit_maybe could actually be the isolation percentage,
+        # which is shown on Maintenance -> Diagnostics -> Isolation
+        # Status alongside the resistance.
+
+        try:
+            inverter_mode = InverterMode(inverter_mode)
+        except ValueError:
+            pass
 
         # e_dc, e_dc_interval, i_dc are hardcoded to 0xff7fffff in the
         # firmware.
@@ -62,7 +87,11 @@ def decode_telem(dev_type, telem_data):
             "uptime": uptime, "interval": interval, "e_ac": e_ac,
             "e_ac_interval": e_ac_interval, "v_ac": v_ac, "i_ac": i_ac,
             "f_ac": f_ac, "v_dc": v_dc, "e_ac_total": e_ac_total,
-            "p_max": p_max, "p_ac": p_ac}
+            "i_rcd": i_rcd_maybe, "cos_phi": cos_phi_maybe,
+            "inverter_mode": inverter_mode, "isolation": isolation,
+            "i_ac_dc": i_ac_dc_maybe, "power_limit": power_limit_maybe,
+            "p_ac": p_ac, "p_ac_apparent": p_ac_apparent,
+            "p_ac_reactive": p_ac_reactive}
 
     # XXX: We're just assuming that each record starts with a timestamp.
     timestamp = datetime.datetime.utcfromtimestamp(
