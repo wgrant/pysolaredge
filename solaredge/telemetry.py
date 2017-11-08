@@ -44,6 +44,7 @@ class InverterMode(enum.Enum):
     SLEEPING = 2
     STARTING = 3
     MPPT = 4
+    STANDBY = 8
 
 
 def decode_telem(dev_type, telem_data):
