@@ -63,19 +63,20 @@ def decode_telem(dev_type, telem_data):
             }
     elif dev_type == TelemRecordType.INVERTER_1PHASE:
         (timestamp, uptime, interval, temp, e_ac, e_ac_interval, v_ac,
-         i_ac, f_ac, e_dc, e_dc_interval, v_dc, i_dc, e_ac_total, i_rcd_maybe,
-         unk, cos_phi_maybe, inverter_mode, isolation, power_limit_maybe,
-         i_ac_dc_maybe, unk, unk, p_ac, p_ac_apparent, p_ac_reactive) = [
+         i_ac, f_ac, e_dc, e_dc_interval, v_dc, i_dc, e_ac_total, i_rcd,
+         unk, cos_phi, inverter_mode, isolation, power_limit, i_ac_dc_maybe,
+         unk, unk, p_ac, p_ac_apparent, p_ac_reactive, unk, power_limit_2,
+         unk, e_ac_total_int) = [
              (v if v != NULL_FLOAT else None) for v in
-             struct.unpack('<LLLffffffffffffffLffffffff', telem_data[:104])]
-        # XXX: Unknown 72-byte tail, too.
+             struct.unpack(
+                 '<LLLffffffffffffffLfffffffffffL', telem_data[:120])]
+        # XXX: Unknown 56-byte tail, too.
 
         # I don't know what i_ac_dc is, since it's too low to be
         # conversion overhead, but it's "I AC/DC [A]" in the web UI.
 
-        # power_limit_maybe could actually be the isolation percentage,
-        # which is shown on Maintenance -> Diagnostics -> Isolation
-        # Status alongside the resistance.
+        # power_limit and power_limit_2 seem identical, at least when
+        # manually configured.
 
         try:
             inverter_mode = InverterMode(inverter_mode)
@@ -89,11 +90,12 @@ def decode_telem(dev_type, telem_data):
             "uptime": uptime, "interval": interval, "e_ac": e_ac,
             "e_ac_interval": e_ac_interval, "v_ac": v_ac, "i_ac": i_ac,
             "f_ac": f_ac, "v_dc": v_dc, "e_ac_total": e_ac_total,
-            "i_rcd": i_rcd_maybe, "cos_phi": cos_phi_maybe,
+            "i_rcd": i_rcd, "cos_phi": cos_phi,
             "inverter_mode": inverter_mode, "isolation": isolation,
-            "i_ac_dc": i_ac_dc_maybe, "power_limit": power_limit_maybe,
+            "i_ac_dc": i_ac_dc_maybe, "power_limit": power_limit,
             "p_ac": p_ac, "p_ac_apparent": p_ac_apparent,
-            "p_ac_reactive": p_ac_reactive}
+            "p_ac_reactive": p_ac_reactive, "power_limit_2": power_limit_2,
+            "e_ac_total_int": e_ac_total_int}
 
     # XXX: We're just assuming that each record starts with a timestamp.
     timestamp = datetime.datetime.utcfromtimestamp(
