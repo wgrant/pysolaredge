@@ -41,6 +41,28 @@ class TestEncodeDecodeMessage(TestCase):
                 data=b'I am lots of data'))
         self.assertEqual(raw, solaredge.proto.encode_message(msg))
 
+    def test_bad_magic(self):
+        # The first four bytes must be 0x79563412.
+        raw = codecs.decode('123456780000ffff123412345678123456781234', 'hex')
+        self.assertRaises(
+            solaredge.proto.BadMessageException,
+            solaredge.proto.decode_message, raw)
+
+    def test_bad_length(self):
+        # The length must be followed by its bitwise inverse.
+        raw = codecs.decode('123456790000fffe123412345678123456781234', 'hex')
+        self.assertRaises(
+            solaredge.proto.BadMessageException,
+            solaredge.proto.decode_message, raw)
+
+    def test_bad_crc(self):
+        # The message must end with a CRC of its metadata and data.
+        raw = codecs.decode(
+            '123456790000ffff1234123456781234567812340000', 'hex')
+        self.assertRaises(
+            solaredge.proto.BadMessageException,
+            solaredge.proto.decode_message, raw)
+
     def test_truncated_header(self):
         raw = codecs.decode('1234567910', 'hex')
         self.assertRaises(

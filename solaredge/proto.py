@@ -36,6 +36,10 @@ def calculate_message_crc(msg):
     return calculate_crc(crc_header + msg.data)
 
 
+class BadMessageException(Exception):
+    pass
+
+
 class IncompleteMessageException(Exception):
     pass
 
@@ -49,8 +53,8 @@ def decode_message_with_tail(raw_msg):
         raise IncompleteMessageException()
     (magic, data_len, data_len_inv, msg_seq, addr_from, addr_to,
      msg_type) = struct.unpack('<4sHHHLLH', raw_msg[:HEADER_LEN])
-    assert magic == MAGIC
-    assert data_len == ~data_len_inv & 0xffff
+    if magic != MAGIC or data_len != ~data_len_inv & 0xffff:
+        raise BadMessageException()
     if len(raw_msg) < HEADER_LEN + data_len + CRC_LEN:
         raise IncompleteMessageException()
     data = raw_msg[HEADER_LEN:HEADER_LEN + data_len]
@@ -59,7 +63,8 @@ def decode_message_with_tail(raw_msg):
 
     crc, = struct.unpack(
         '<H', raw_msg[HEADER_LEN + data_len: HEADER_LEN + data_len + CRC_LEN])
-    assert calculate_message_crc(msg) == crc
+    if calculate_message_crc(msg) != crc:
+        raise BadMessageException()
 
     return msg, raw_msg[HEADER_LEN + data_len + CRC_LEN:]
 
