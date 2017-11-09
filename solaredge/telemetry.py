@@ -43,7 +43,8 @@ class InverterMode(enum.Enum):
     OFF = 1
     SLEEPING = 2
     STARTING = 3
-    MPPT = 4
+    MPPT = 4 # "Production"
+    THROTTLED = 5 # "Power Limitation"
     STANDBY = 8
 
 
