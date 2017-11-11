@@ -64,9 +64,9 @@ def decode_telem(dev_type, telem_data):
     elif dev_type == TelemRecordType.INVERTER_1PHASE:
         (timestamp, uptime, interval, temp, e_ac, e_ac_interval, v_ac,
          i_ac, f_ac, e_dc, e_dc_interval, v_dc, i_dc, e_ac_total, i_rcd,
-         unk, cos_phi, inverter_mode, isolation, power_limit, i_ac_dc_maybe,
-         unk, unk, p_ac, p_ac_apparent, p_ac_reactive, unk, power_limit_2,
-         unk, e_ac_total_int) = [
+         unk1, cos_phi, inverter_mode, isolation, power_limit, i_ac_dc_maybe,
+         unk2, unk3, p_ac, p_ac_apparent, p_ac_reactive, power_limit_unk1,
+         power_limit_2, power_limit_unk2, e_ac_total_int) = [
              (v if v != NULL_FLOAT else None) for v in
              struct.unpack(
                  '<LLLffffffffffffffLfffffffffffL', telem_data[:120])]
@@ -95,7 +95,10 @@ def decode_telem(dev_type, telem_data):
             "i_ac_dc": i_ac_dc_maybe, "power_limit": power_limit,
             "p_ac": p_ac, "p_ac_apparent": p_ac_apparent,
             "p_ac_reactive": p_ac_reactive, "power_limit_2": power_limit_2,
-            "e_ac_total_int": e_ac_total_int}
+            "power_limit_unk1": power_limit_unk1,
+            "power_limit_unk2": power_limit_unk2,
+            "e_ac_total_int": e_ac_total_int, "unk1": unk1, "unk2": unk2,
+            "unk3": unk3}
 
     # XXX: We're just assuming that each record starts with a timestamp.
     timestamp = datetime.datetime.utcfromtimestamp(
