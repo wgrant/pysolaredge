@@ -7,6 +7,10 @@ import struct
 import sys
 import time
 
+
+SUNSPEC_IDENTIFIER = 0x53756e53 # "SunS"
+SUNSPEC_END_MODEL = 0xffff
+
 host, port = sys.argv[1].split(':')
 
 socket.setdefaulttimeout(10)
@@ -28,18 +32,45 @@ def modbus_read_holding(s, base, count):
     return r[9:9 + n]
 
 
-res = modbus_read_holding(s, 40001, 69)
-(C_SunSpec_ID, C_SunSpec_DID, C_SunSpec_Length, C_Manufacturer, C_Model,
+def sunspec_enumerate_models(s):
+    cursor = 40001
+    suns_identifier = modbus_read_holding(s, cursor, 2)
+    assert struct.unpack('>L', suns_identifier) == (SUNSPEC_IDENTIFIER,)
+    cursor += 2
+
+    # Enumerate the models.
+    models = []
+    while True:
+        model_id, = struct.unpack('>H', modbus_read_holding(s, cursor, 1))
+        if model_id == SUNSPEC_END_MODEL:
+            # I'm not convinced the End Model will always have a length.
+            break
+        model_header = modbus_read_holding(s, cursor, 2)
+        model_id, model_l = struct.unpack('>HH', model_header)
+        models.append((model_id, cursor, model_l))
+        cursor += 2 + model_l
+    return models
+
+
+models = sunspec_enumerate_models(s)
+
+common_model, = [model for model in models if model[0] == 1]
+common_model_data = modbus_read_holding(
+    s, common_model[1], common_model[2] + 2)
+
+(C_SunSpec_DID, C_SunSpec_Length, C_Manufacturer, C_Model,
  _, C_Version, C_SerialNumber, C_DeviceAddress) = struct.unpack(
-     '>LHH32s32s16s16s32sH', res)
+     '>HH32s32s16s16s32sH', common_model_data)
 
 C_Manufacturer = C_Manufacturer.partition(b'\0')[0].decode('UTF-8')
 C_Model = C_Model.partition(b'\0')[0].decode('UTF-8')
 C_Version = C_Version.partition(b'\0')[0].decode('UTF-8')
 C_SerialNumber = C_SerialNumber.partition(b'\0')[0].decode('UTF-8')
 
+inverter_model, = [model for model in models if model[0] == 101]
 while True:
-    res = modbus_read_holding(s, 40072, 50)
+    res = modbus_read_holding(s, inverter_model[1], inverter_model[2] + 2)
+    res = res[4:]
 
     (I_AC_Current, I_AC_CurrentA, I_AC_CurrentB, I_AC_CurrentC,
      I_AC_Current_SF, I_AC_VoltageAB, I_AC_VoltageBC, I_AC_VoltageCA,
