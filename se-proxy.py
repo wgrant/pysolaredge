@@ -82,15 +82,18 @@ class SolarEdgeMessageRouter:
 
     def endpoint_connection_made(self, name):
         for handler in self.connect_handlers:
-            handler(self, name)
+            if handler(self, name):
+                break
 
     def endpoint_connection_lost(self, name):
         for handler in self.disconnect_handlers:
-            handler(self, name)
+            if handler(self, name):
+                break
 
     def endpoint_message_received(self, name, msg):
         for handler in self.message_handlers:
-            handler(self, name, msg)
+            if handler(self, name, msg):
+                break
 
 
 def connect_portal_when_device_connects(router, name):
@@ -140,6 +143,38 @@ def debug_message(router, name, msg):
     print("{}: {}".format(name, msg))
 
 
+CURRENT_INTERLOPER = None
+
+
+def interloper_connect(router, name):
+    global CURRENT_INTERLOPER
+    if not name.startswith('interloper-'):
+        return
+    CURRENT_INTERLOPER = name
+
+
+def interloper_disconnect(router, name):
+    global CURRENT_INTERLOPER
+    if not name.startswith('interloper-'):
+        return
+    if CURRENT_INTERLOPER == name:
+        CURRENT_INTERLOPER = None
+
+
+def interloper_message(router, name, msg):
+    # If an interloper is connected, hijack 0xfffffffd (conftool)
+    # messages from the latest device to it.
+    if CURRENT_INTERLOPER is None:
+        return
+    if msg.addr_from == 0xfffffffd:
+        router.endpoints[
+            'device-{}'.format(LAST_DEVICE_IDX)].send_message(msg)
+        return True
+    elif msg.addr_to == 0xfffffffd:
+        router.endpoints[CURRENT_INTERLOPER].send_message(msg)
+        return True
+
+
 LAST_DEVICE_IDX = 0
 
 
@@ -147,6 +182,15 @@ def get_device_idx():
     global LAST_DEVICE_IDX
     LAST_DEVICE_IDX += 1
     return LAST_DEVICE_IDX
+
+
+LAST_INTERLOPER_IDX = 0
+
+
+def get_interloper_idx():
+    global LAST_INTERLOPER_IDX
+    LAST_INTERLOPER_IDX += 1
+    return LAST_INTERLOPER_IDX
 
 
 def main(args):
@@ -158,21 +202,32 @@ def main(args):
     router.disconnect_handlers.append(debug_disconnect)
     router.message_handlers.append(debug_message)
 
+    # Interloper hijacking
+    router.connect_handlers.append(interloper_connect)
+    router.disconnect_handlers.append(interloper_disconnect)
+    router.message_handlers.append(interloper_message)
+
     # Device <-> portal
     router.connect_handlers.append(connect_portal_when_device_connects)
     router.disconnect_handlers.append(
         forward_disconnect_between_portal_and_device)
     router.message_handlers.append(forward_message_between_portal_and_device)
 
-    server = loop.run_until_complete(loop.create_server(
+    device_server = loop.run_until_complete(loop.create_server(
         lambda: SolarEdgeEndpointProtocol(
             router, 'device-{}'.format(get_device_idx())),
         '0.0.0.0', 22222))
+    interloper_server = loop.run_until_complete(loop.create_server(
+        lambda: SolarEdgeEndpointProtocol(
+            router, 'interloper-{}'.format(get_interloper_idx())),
+        '0.0.0.0', 22223))
     try:
         loop.run_forever()
     finally:
-        server.close()
-        loop.run_until_complete(server.wait_closed())
+        device_server.close()
+        interloper_server.close()
+        loop.run_until_complete(device_server.wait_closed())
+        loop.run_until_complete(interloper_server.wait_closed())
         loop.close()
     return 0
 
