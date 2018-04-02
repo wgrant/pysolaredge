@@ -132,15 +132,15 @@ def forward_message_between_portal_and_device(router, name, msg):
 
 
 def debug_connect(router, name):
-    print("{} connected".format(name))
+    logging.info("{} connected".format(name))
 
 
 def debug_disconnect(router, name):
-    print("{} disconnected".format(name))
+    logging.info("{} disconnected".format(name))
 
 
 def debug_message(router, name, msg):
-    print("{}: {}".format(name, msg))
+    logging.info("{}: {}".format(name, msg))
 
 
 CURRENT_INTERLOPER = None
@@ -194,6 +194,10 @@ def get_interloper_idx():
 
 
 def main(args):
+    logging.basicConfig(
+        format="%(asctime)s.%(msecs)03d %(levelname)s %(message)s",
+        level=logging.DEBUG)
+
     loop = asyncio.get_event_loop()
     router = SolarEdgeMessageRouter(loop)
 
