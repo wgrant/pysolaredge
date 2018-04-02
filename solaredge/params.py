@@ -20,6 +20,10 @@ def decode_parameter_ids(raw):
     return param_ids
 
 
+def encode_parameter_ids(param_ids):
+    return struct.pack('<' + ('H' * len(param_ids)), *param_ids)
+
+
 def decode_parameters(raw):
     params = []
     while raw:
