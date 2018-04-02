@@ -1,4 +1,5 @@
 import enum
+import struct
 
 
 class PolestarParameters(enum.Enum):
@@ -598,3 +599,17 @@ class PolestarMessageType(enum.Enum):
     RESP_POLESTAR_GET_ENERGY_STATISTICS_STATUS = 0x038d
     RESP_POLESTAR_GET_SERVER_CONTROL_STATUS = 0x0392
     RESP_POLESTAR_READ_LCD = 0x0398
+
+
+def decode_ip_addr_get(msg):
+    octets = struct.unpack('<BBBBBBBBBBBBBBBB', msg.data)
+    return {
+        "addr": ".".join(str(o) for o in reversed(octets[:4])),
+        "netmask": ".".join(str(o) for o in reversed(octets[4:8])),
+        "gateway_addr": ".".join(str(o) for o in reversed(octets[8:12])),
+        "dns_addr": ".".join(str(o) for o in reversed(octets[12:16])),
+    }
+
+MESSAGE_DECODERS = {
+    PolestarMessageType.RESP_POLESTAR_IP_ADDR_GET: decode_ip_addr_get,
+}

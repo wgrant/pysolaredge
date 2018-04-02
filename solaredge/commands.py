@@ -35,10 +35,18 @@ def get_parameter_id(msg, param_id):
     return param_id
 
 
-def decode_param_ids_message(msg):
+def decode_param_ids_message(data):
     return [
         get_parameter_id(msg, param_id)
         for param_id in solaredge.params.decode_parameter_ids(msg.data)]
+
+
+TYPE_CLASSES = []
+
+
+def register_enum(cls):
+    if cls not in TYPE_CLASSES:
+        TYPE_CLASSES.append(cls)
 
 
 MESSAGE_DECODERS = {
@@ -48,3 +56,35 @@ MESSAGE_DECODERS = {
     GenericMessageType.CMD_SERVER_POST_DATA:
         lambda msg: solaredge.telemetry.decode_telems(msg.data),
     }
+
+
+def register_decoders(decoders):
+    for type, decoder in decoders.items():
+        if type in MESSAGE_DECODERS:
+            raise Exception("Duplicate decoder for %s" % type)
+        MESSAGE_DECODERS[type] = decoder
+
+
+class UnknownCommand(Exception):
+    pass
+
+
+def decode_type(type_id):
+    for cls in TYPE_CLASSES:
+        try:
+            return cls(type_id)
+        except ValueError:
+            continue
+
+
+def decode_message(msg):
+    type = decode_type(msg.type) or msg.type
+    decoder = MESSAGE_DECODERS.get(type)
+    data = decoder(msg) if decoder else msg.data
+    return type, data
+
+
+register_enum(GenericMessageType)
+register_enum(solaredge.devices.polestar.PolestarMessageType)
+register_enum(solaredge.devices.venus.VenusMessageType)
+register_decoders(solaredge.devices.polestar.MESSAGE_DECODERS)
