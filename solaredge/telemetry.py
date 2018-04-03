@@ -27,6 +27,7 @@ class TelemRecordType(enum.Enum):
     xx_STORAGEDAILY2 = 0x0040
     xx_UNK = 0x0041
     xx_METERDAILY = 0x0042
+    xx_UNK2 = 0x0043 # Daily, lists optimizers.
     xx_PANEL_NEW = 0x0080
     xx_INVERTER_1PHASE_NEW = 0x0090
     xx_INVERTER_3PHASE_NEW = 0x0091
@@ -100,6 +101,18 @@ def decode_telem(dev_type, telem_data):
             "power_limit_unk2": power_limit_unk2,
             "e_ac_total_int": e_ac_total_int, "unk1": unk1, "unk2": unk2,
             "unk3": unk3}
+    elif dev_type == TelemRecordType.xx_UNK2:
+        bits = struct.unpack(
+            "<LHHHH" + ("LB" * ((len(telem_data) - 12) // 5)), telem_data)
+        timestamp, unk1, unk2, unk3, unk4 = bits[:5]
+        rest = list(bits[5:])
+        optimizers = []
+        while rest:
+            optimizers.append((rest.pop(0), rest.pop(0)))
+        return {
+            "timestamp": datetime.datetime.utcfromtimestamp(timestamp),
+            "unk1": unk1, "unk2": unk2, "unk3": unk3, "unk4": unk4,
+            "optimizers": optimizers}
 
     # XXX: We're just assuming that each record starts with a timestamp.
     timestamp = datetime.datetime.utcfromtimestamp(
