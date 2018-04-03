@@ -52,6 +52,7 @@ def decode_telem(dev_type, telem_data):
     if dev_type == TelemRecordType.xx_PANEL_NEW:
         timestamp, uptime, power_attrs, energy, temp = struct.unpack(
             '<LHLHB', telem_data)
+        temp *= 2.0
         vdc_in = 0.125 * (power_attrs & 0x000003ff)
         vdc_out = 0.125 * ((power_attrs & 0x000ffc00) >> 10)
         i_in = 0.00625 * ((power_attrs & 0xfff00000) >> 20)
