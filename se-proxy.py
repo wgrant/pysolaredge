@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 
 import asyncio
+import base64
+import datetime
+import json
 import logging
 import sys
 
@@ -143,6 +146,14 @@ def debug_message(router, name, msg):
     logging.info("{}: {}".format(name, msg))
 
 
+def record_message(router, name, msg):
+    print(json.dumps(
+        {"timestamp": datetime.datetime.utcnow().isoformat(), "seq": msg.seq,
+         "addr_from": msg.addr_from, "addr_to": msg.addr_to, "type": msg.type,
+         "data": base64.b64encode(msg.data).decode('ascii')}))
+    sys.stdout.flush()
+
+
 CURRENT_INTERLOPER = None
 
 
@@ -205,6 +216,7 @@ def main(args):
     router.connect_handlers.append(debug_connect)
     router.disconnect_handlers.append(debug_disconnect)
     router.message_handlers.append(debug_message)
+    router.message_handlers.append(record_message)
 
     # Interloper hijacking
     router.connect_handlers.append(interloper_connect)
